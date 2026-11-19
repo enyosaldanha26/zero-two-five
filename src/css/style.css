@@ -1906,7 +1906,7 @@ body {
     inset: 14% 20%;
   }
   .table-card-frame {
-    width: clamp(50px, 14vw, 62px);
+    width: clamp(55px, 15.4vw, 68px);
     border-width: 2.5px;
     border-radius: 9px;
     box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.65);
@@ -1920,9 +1920,9 @@ body {
     font-size: 1rem;
   }
   .comic-callout {
-    top: 48%;
-    max-width: 184px;
-    padding: 4px 8px;
+    top: 92%;
+    max-width: min(260px, 84vw);
+    padding: 6px 14px;
     gap: 2px;
     border-width: 2.5px;
     border-radius: 12px;
@@ -1967,7 +1967,7 @@ body {
     padding: 16px 6px 2px;
   }
   .hand-card-btn {
-    width: clamp(52px, 14.5vw, 68px);
+    width: clamp(57px, 16vw, 75px);
     border-width: 2.5px;
     border-radius: 8px;
     box-shadow: 2px 4px 0 rgba(0, 0, 0, 0.65);
