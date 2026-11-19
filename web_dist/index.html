@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Zero Two Five</title>
+  <meta name="description" content="Um jogo de Ênyo Saldanha e Eurico Cunha — Pedra, Papel, Tesoura... na medida certa!" />
+  <meta name="theme-color" content="#df1d24" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta property="og:title" content="Zero Two Five" />
+  <meta property="og:description" content="Um jogo de Ênyo Saldanha e Eurico Cunha — Pedra, Papel, Tesoura... na medida certa!" />
+  <meta property="og:type" content="website" />
+  <link rel="icon" type="image/png" href="assets/tokens/2_token.png" />
+  <link rel="apple-touch-icon" href="assets/tokens/2_token.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="src/css/style.css" />
+</head>
+<body class="theme-crimson">
+  <div id="app">
+    <!-- ================= MAIN MENU ================= -->
+    <section id="menu-screen" class="screen active">
+      <div class="comic-bg-rays"></div>
+      <div class="comic-bg-halftone"></div>
+      <div class="floating-deco" aria-hidden="true">
+        <img src="zero_two_five_cartas/jokenpo datamerged2.png" class="float-card fc-1" alt="" />
+        <img src="zero_two_five_cartas/jokenpo datamerged53.png" class="float-card fc-2" alt="" />
+        <img src="zero_two_five_cartas/jokenpo datamerged41.png" class="float-card fc-3" alt="" />
+        <img src="zero_two_five_cartas/jokenpo datamerged.png" class="float-card fc-4" alt="" />
+        <img src="assets/tokens/0_token.png" class="float-token ft-1" alt="" />
+        <img src="assets/tokens/2_token.png" class="float-token ft-2" alt="" />
+        <img src="assets/tokens/5_token.png" class="float-token ft-3" alt="" />
+      </div>
+
+      <div class="menu-container">
+        <header class="brand-header">
+          <p class="brand-credits" data-i18n="gameCredits">Um jogo de Ênyo Saldanha e Eurico Cunha</p>
+          <div class="logo-lockup">
+            <span class="logo-zero">ZERO</span>
+            <span class="logo-two">TWO</span>
+            <span class="logo-five">FIVE</span>
+          </div>
+          <p class="brand-subtitle" data-i18n="subtitle">Pedra, Papel, Tesoura... na medida certa!</p>
+        </header>
+
+        <div class="menu-card">
+          <div class="menu-grid">
+            <div class="setup-col">
+              <div class="setup-group">
+                <label class="setup-label" data-i18n="playersLabel">Jogadores</label>
+                <div class="segmented" id="player-count-picker">
+                  <button type="button" class="seg-btn" data-players="3">3</button>
+                  <button type="button" class="seg-btn active" data-players="4">4</button>
+                  <button type="button" class="seg-btn" data-players="5">5</button>
+                </div>
+              </div>
+
+              <div class="setup-group">
+                <label class="setup-label" data-i18n="modeLabel">Modo de Jogo</label>
+                <div class="mode-cards" id="mode-picker">
+                  <button type="button" class="mode-card active" data-mode="basic">
+                    <strong data-i18n="modeBasic">Básico</strong>
+                    <span data-i18n="modeBasicDesc">12 disputas. Ganhe 0, 2 ou 5 para pontuar!</span>
+                  </button>
+                  <button type="button" class="mode-card" data-mode="advanced">
+                    <strong data-i18n="modeAdvanced">Avançado</strong>
+                    <span data-i18n="modeAdvancedDesc">11 disputas + Palpite obrigatório na mesa!</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setup-group">
+                <label class="setup-label" data-i18n="difficultyLabel">Nível da IA</label>
+                <div class="segmented" id="difficulty-picker">
+                  <button type="button" class="seg-btn" data-diff="casual" data-i18n="diffCasual">Casual</button>
+                  <button type="button" class="seg-btn active" data-diff="tactical" data-i18n="diffTactical">Tático</button>
+                  <button type="button" class="seg-btn" data-diff="master" data-i18n="diffMaster">Mestre</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="setup-col">
+              <div class="setup-group">
+                <label class="setup-label" for="player-name-input" data-i18n="yourName">Seu Nome</label>
+                <input id="player-name-input" class="comic-input" type="text" maxlength="14" value="Você" />
+              </div>
+
+              <div class="setup-group">
+                <label class="setup-label" data-i18n="yourAvatar">Seu Avatar</label>
+                <div class="avatar-picker" id="avatar-picker"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="menu-actions">
+            <button id="start-game-btn" type="button" class="btn-comic btn-play">
+              <span>▶</span>
+              <span data-i18n="playNow">Jogar Partida</span>
+            </button>
+            <div class="menu-secondary-actions">
+              <button id="open-rules-menu-btn" type="button" class="btn-comic btn-secondary">
+                <span>📖</span>
+                <span data-i18n="rulesBtn">Manual & Regras</span>
+              </button>
+              <button id="open-settings-menu-btn" type="button" class="btn-comic btn-secondary">
+                <span>⚙️</span>
+                <span data-i18n="settingsBtn">Configurações</span>
+              </button>
+              <button id="quit-desktop-btn" type="button" class="btn-comic btn-danger hidden">
+                <span>🚪</span>
+                <span data-i18n="quitDesktop">Sair para Desktop</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= GAME TABLE ================= -->
+    <section id="game-screen" class="screen">
+      <div class="comic-bg-rays"></div>
+      <div class="comic-bg-halftone"></div>
+      <div class="table-perspective-floor" aria-hidden="true"></div>
+
+      <!-- Top HUD -->
+      <header class="top-hud">
+        <div class="hud-left">
+          <div class="mini-logo">
+            <span class="lz">ZERO</span><span class="lt">TWO</span><span class="lf">FIVE</span>
+          </div>
+          <div class="hud-pill" id="hud-round-pill">Rodada 1/5</div>
+          <div class="hud-pill hud-pill-accent" id="hud-dispute-pill">Disputa 1/12</div>
+          <div class="hud-pill hud-pill-mode" id="hud-mode-pill">Básico</div>
+        </div>
+
+        <div class="hud-center">
+          <div class="center-status-banner" id="center-status-banner">
+            <span id="center-status-text">Aguardando carta inicial...</span>
+          </div>
+        </div>
+
+        <div class="hud-right">
+          <div class="reserve-box" id="hud-reserve" title="Fichas restantes na reserva">
+            <div class="res-item"><img src="assets/tokens/0_token.png" alt="0" /><span id="res-0">10</span></div>
+            <div class="res-item"><img src="assets/tokens/2_token.png" alt="2" /><span id="res-2">10</span></div>
+            <div class="res-item"><img src="assets/tokens/5_token.png" alt="5" /><span id="res-5">10</span></div>
+          </div>
+          <button id="hud-speed-btn" type="button" class="hud-icon-btn" title="Velocidade">1×</button>
+          <button id="hud-sfx-btn" type="button" class="hud-icon-btn" title="Som">🔊</button>
+          <button id="hud-music-btn" type="button" class="hud-icon-btn" title="Música">🎵</button>
+          <button id="hud-rules-btn" type="button" class="hud-icon-btn" title="Regras">?</button>
+          <button id="hud-settings-btn" type="button" class="hud-icon-btn" title="Configurações">⚙️</button>
+          <button id="hud-menu-btn" type="button" class="hud-icon-btn" title="Menu">☰</button>
+        </div>
+      </header>
+
+      <!-- Table Playfield -->
+      <main class="table-arena" id="table-arena">
+        <!-- Opponent seats injected dynamically -->
+        <div id="opponents-layer" class="opponents-layer"></div>
+
+        <!-- Center Vortex & Played Cards -->
+        <div class="center-zone" id="center-zone">
+          <div class="direction-ring" aria-hidden="true">
+            <svg viewBox="0 0 360 360" class="arrows-svg">
+              <defs>
+                <linearGradient id="arrowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#ffd166" />
+                  <stop offset="100%" stop-color="#f77f00" />
+                </linearGradient>
+              </defs>
+              <!-- Clockwise Curved Arrow Top-Right -->
+              <path d="M 92 48 A 145 145 0 0 1 304 128 L 320 118 L 302 162 L 266 138 L 284 132 A 122 122 0 0 0 92 68 Z"
+                    fill="url(#arrowGrad)" stroke="#111" stroke-width="5" stroke-linejoin="round" />
+              <!-- Clockwise Curved Arrow Bottom-Left -->
+              <path d="M 268 312 A 145 145 0 0 1 56 232 L 40 242 L 58 198 L 94 222 L 76 228 A 122 122 0 0 0 268 292 Z"
+                    fill="url(#arrowGrad)" stroke="#111" stroke-width="5" stroke-linejoin="round" />
+            </svg>
+          </div>
+
+          <div class="played-cards-stage" id="played-cards-stage"></div>
+
+          <div class="comic-callout hidden" id="comic-callout">
+            <div class="callout-burst" id="callout-title">BAM!</div>
+            <div class="callout-sub" id="callout-sub"></div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Human Player Bottom Dock -->
+      <footer class="human-dock" id="human-dock">
+        <div class="human-profile-panel" id="human-profile-panel">
+          <div class="seat-avatar-wrap" id="human-avatar-wrap">
+            <div class="bam-tag">VEZ!</div>
+            <div class="avatar-frame" id="human-avatar-frame"></div>
+            <div class="card-count-badge" id="human-card-count">12</div>
+          </div>
+
+          <div class="human-meta">
+            <div class="human-name-row">
+              <span class="seat-name" id="human-name-label">Você</span>
+            </div>
+
+            <div class="human-stats-row">
+              <div class="wins-pill" id="human-wins-pill">
+                <span class="trophy-icon">🏆</span>
+                <strong id="human-wins-count">0</strong>
+              </div>
+              <div class="tokens-row" id="human-tokens-row"></div>
+              <div class="bid-mini-slot hidden" id="human-bid-slot"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="human-hand-area">
+          <div class="turn-instruction-bar" id="turn-instruction-bar">
+            <span id="turn-instruction-text">Sua vez!</span>
+          </div>
+          <div class="human-hand" id="human-hand"></div>
+        </div>
+
+        <div class="human-controls-panel">
+          <button id="sort-hand-btn" type="button" class="btn-comic btn-small">
+            <span>⇅</span>
+            <span id="sort-hand-label">Ordenar por Número</span>
+          </button>
+          <button id="place-bid-btn" type="button" class="btn-comic btn-bid hidden">
+            <span>🎯</span>
+            <span id="place-bid-label">Colocar Palpite</span>
+          </button>
+        </div>
+      </footer>
+    </section>
+
+    <!-- ================= MODALS ================= -->
+    <div id="modal-backdrop" class="modal-backdrop hidden">
+      <!-- Rules Modal -->
+      <div id="rules-modal" class="comic-modal hidden">
+        <div class="modal-header">
+          <h2 data-i18n="manualTitle">Como Jogar Zero Two Five</h2>
+          <button type="button" class="modal-close-btn" data-close-modal="rules-modal">✕</button>
+        </div>
+        <div class="modal-body rules-body" id="rules-content"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn-comic btn-play" data-close-modal="rules-modal" data-i18n="close">Fechar</button>
+        </div>
+      </div>
+
+      <!-- Settings Modal -->
+      <div id="settings-modal" class="comic-modal hidden">
+        <div class="modal-header">
+          <h2 data-i18n="settingsBtn">Configurações</h2>
+          <button type="button" class="modal-close-btn" data-close-modal="settings-modal">✕</button>
+        </div>
+        <div class="modal-body settings-body">
+          <div class="setting-row">
+            <label data-i18n="tableTheme">Tema da Mesa</label>
+            <div class="theme-picker" id="theme-picker"></div>
+          </div>
+          <div class="setting-row">
+            <label data-i18n="languageLabel">Idioma</label>
+            <div class="segmented" id="lang-picker">
+              <button type="button" class="seg-btn active" data-lang="pt">Português (BR)</button>
+              <button type="button" class="seg-btn" data-lang="en">English</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label data-i18n="speedLabel">Velocidade</label>
+            <div class="segmented" id="speed-picker">
+              <button type="button" class="seg-btn active" data-speed="normal" data-i18n="speedNormal">Normal</button>
+              <button type="button" class="seg-btn" data-speed="fast" data-i18n="speedFast">Rápida</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label data-i18n="soundLabel">Efeitos Sonoros</label>
+            <div class="segmented" id="sfx-picker">
+              <button type="button" class="seg-btn active" data-sfx="on" data-i18n="on">Ligado</button>
+              <button type="button" class="seg-btn" data-sfx="off" data-i18n="off">Desligado</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <label data-i18n="musicLabel">Música de Fundo</label>
+            <div class="segmented" id="music-picker">
+              <button type="button" class="seg-btn" data-music="on" data-i18n="on">Ligado</button>
+              <button type="button" class="seg-btn active" data-music="off" data-i18n="off">Desligado</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-comic btn-play" data-close-modal="settings-modal" data-i18n="close">Fechar</button>
+        </div>
+      </div>
+
+      <!-- Round Summary Modal -->
+      <div id="round-modal" class="comic-modal comic-modal-wide hidden">
+        <div class="modal-header">
+          <h2 id="round-modal-title">Fim da Rodada 1</h2>
+        </div>
+        <div class="modal-body" id="round-modal-body"></div>
+        <div class="modal-footer">
+          <button id="round-next-btn" type="button" class="btn-comic btn-play">Próxima Rodada</button>
+        </div>
+      </div>
+
+      <!-- Game Over Modal -->
+      <div id="gameover-modal" class="comic-modal comic-modal-wide hidden">
+        <div class="modal-header">
+          <h2 id="gameover-modal-title">Fim de Jogo!</h2>
+        </div>
+        <div class="modal-body" id="gameover-modal-body"></div>
+        <div class="modal-footer gameover-footer">
+          <button id="tie-jokenpo-btn" type="button" class="btn-comic btn-bid hidden">Decidir no Pedra, Papel, Tesoura!</button>
+          <button id="play-again-btn" type="button" class="btn-comic btn-play">Jogar Novamente</button>
+          <button id="back-menu-btn" type="button" class="btn-comic btn-secondary">Menu Principal</button>
+        </div>
+      </div>
+
+      <!-- Jokenpô Tie-Breaker Modal -->
+      <div id="jokenpo-modal" class="comic-modal hidden">
+        <div class="modal-header">
+          <h2 id="jokenpo-modal-title">Desempate: Pedra, Papel, Tesoura!</h2>
+        </div>
+        <div class="modal-body" id="jokenpo-modal-body"></div>
+      </div>
+
+      <!-- In-Match Pause / Menu Modal -->
+      <div id="pause-menu-modal" class="comic-modal hidden">
+        <div class="modal-header">
+          <h2 data-i18n="pauseTitle">Menu da Partida</h2>
+          <button type="button" class="modal-close-btn" data-close-modal="pause-menu-modal">✕</button>
+        </div>
+        <div class="modal-body pause-menu-body">
+          <div id="pause-scoreboard" class="pause-scoreboard"></div>
+          <div class="pause-menu-actions">
+            <button id="pause-resume-btn" type="button" class="btn-comic btn-play" data-i18n="resumeBtn">▶ Continuar Partida</button>
+            <button id="pause-restart-btn" type="button" class="btn-comic btn-bid" data-i18n="restartBtn">🔄 Reiniciar Partida</button>
+            <button id="pause-settings-btn" type="button" class="btn-comic btn-secondary" data-i18n="settingsBtn">Configurações</button>
+            <button id="pause-rules-btn" type="button" class="btn-comic btn-secondary" data-i18n="rulesBtn">Manual & Regras</button>
+            <button id="pause-leave-btn" type="button" class="btn-comic btn-danger" data-i18n="leaveMatchBtn">🚪 Sair da Partida</button>
+            <button id="pause-quit-btn" type="button" class="btn-comic btn-danger hidden" data-i18n="quitDesktop">Sair para Desktop</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <canvas id="confetti-canvas" class="confetti-canvas hidden"></canvas>
+  </div>
+
+  <script type="module" src="src/js/main.js"></script>
+</body>
+</html>
