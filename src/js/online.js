@@ -25,7 +25,7 @@ export function hashPassword(roomCode, rawPassword) {
   return `${(h1 >>> 0).toString(16).padStart(8, '0')}${(h2 >>> 0).toString(16).padStart(8, '0')}`;
 }
 
-export function filterPublicRooms(roomsCollection, nowMs = Date.now(), staleMs = 65000) {
+export function filterPublicRooms(roomsCollection, nowMs = Date.now(), staleMs = 300000) {
   const list =
     roomsCollection instanceof Map
       ? Array.from(roomsCollection.values())
@@ -114,6 +114,10 @@ export class OnlineManager {
     this.lastHostSeen = 0;
     this.pendingJoin = null;
     this.pendingRoomLookups = new Map();
+    this._connectPromise = null;
+    this._connectTargetBroker = null;
+    this._connectGen = 0;
+    this._reconnectTimer = null;
 
     this.client = new MqttWsClient({
       onStatusChange: (status, broker) => {
@@ -123,6 +127,9 @@ export class OnlineManager {
       },
       onMessage: (topic, payload) => this._handleMessage(topic, payload),
       onClose: () => {
+        if (this.role === 'host' && this.currentRoom) {
+          this._scheduleHostReconnect();
+        }
         if (this.callbacks.onConnectionLost) {
           this.callbacks.onConnectionLost();
         }
@@ -138,19 +145,126 @@ export class OnlineManager {
     return filterPublicRooms(this.rooms);
   }
 
-  async ensureConnected(preferredBrokerIndex = 0) {
-    if (this.client.status === 'connected') {
+  async ensureConnected(preferredBrokerIndex = null) {
+    const targetBroker = preferredBrokerIndex !== null ? preferredBrokerIndex : this.brokerIndex;
+
+    if (
+      this.client.status === 'connected' &&
+      (preferredBrokerIndex === null || preferredBrokerIndex === this.brokerIndex)
+    ) {
+      this.client.subscribe(`${TOPIC_PREFIX}/rooms/+`);
       return { broker: this.client.broker, brokerIndex: this.brokerIndex };
     }
-    const res = await this.client.connectWithFallback({ startBrokerIndex: preferredBrokerIndex });
-    this.brokerIndex = res.brokerIndex;
+
+    if (this._connectPromise) {
+      if (preferredBrokerIndex === null || this._connectTargetBroker === targetBroker) {
+        return this._connectPromise;
+      }
+      try {
+        await this._connectPromise;
+      } catch {
+        // ignore previous attempt error when switching explicitly
+      }
+    }
+
+    const gen = ++this._connectGen;
+    this._connectTargetBroker = targetBroker;
     this.client.subscribe(`${TOPIC_PREFIX}/rooms/+`);
-    return res;
+
+    const p = this.client
+      .connectWithFallback({
+        startBrokerIndex: targetBroker,
+        seqGuard: () => gen === this._connectGen
+      })
+      .then((res) => {
+        if (this.brokerIndex !== res.brokerIndex) {
+          this.rooms.clear();
+        }
+        this.brokerIndex = res.brokerIndex;
+        this.client.subscribe(`${TOPIC_PREFIX}/rooms/+`);
+        return res;
+      })
+      .finally(() => {
+        if (this._connectPromise === p) {
+          this._connectPromise = null;
+          this._connectTargetBroker = null;
+        }
+      });
+
+    this._connectPromise = p;
+    return p;
+  }
+
+  async _connectWithWill(brokerIndex, will) {
+    if (this._connectPromise) {
+      try {
+        await this._connectPromise;
+      } catch {
+        // ignore
+      }
+    }
+
+    const gen = ++this._connectGen;
+    this._connectTargetBroker = brokerIndex;
+
+    const p = this.client
+      .connectWithFallback({
+        will,
+        startBrokerIndex: brokerIndex,
+        seqGuard: () => gen === this._connectGen
+      })
+      .then((res) => {
+        this.brokerIndex = res.brokerIndex;
+        return res;
+      })
+      .finally(() => {
+        if (this._connectPromise === p) {
+          this._connectPromise = null;
+          this._connectTargetBroker = null;
+        }
+      });
+
+    this._connectPromise = p;
+    return p;
+  }
+
+  _scheduleHostReconnect() {
+    clearTimeout(this._reconnectTimer);
+    this._reconnectTimer = setTimeout(async () => {
+      if (this.role !== 'host' || !this.currentRoom || this.client.status === 'connected') return;
+      const room = this.currentRoom;
+      try {
+        this.client.subscribe(`${TOPIC_PREFIX}/rooms/+`);
+        this.client.subscribe(`${TOPIC_PREFIX}/room/${room.code}/to_host`);
+        await this._connectWithWill(room.brokerIndex ?? this.brokerIndex, {
+          topic: `${TOPIC_PREFIX}/rooms/${room.code}`,
+          payload: '',
+          retain: true
+        });
+        room.brokerIndex = this.brokerIndex;
+        this._publishHostRoom(false);
+        this._emitRoomState();
+      } catch {
+        if (this.role === 'host' && this.currentRoom) {
+          this._scheduleHostReconnect();
+        }
+      }
+    }, 2000);
+  }
+
+  async handleTabVisible() {
+    if (this.client.status === 'connected') {
+      this.client.pingNow();
+      if (this.role === 'host' && this.currentRoom) {
+        this._publishHostRoom(false);
+      }
+    } else if (this.role === 'host' && this.currentRoom) {
+      this._scheduleHostReconnect();
+    }
   }
 
   async refreshDirectory() {
-    await this.ensureConnected(this.brokerIndex);
-    this.client.unsubscribe(`${TOPIC_PREFIX}/rooms/+`);
+    await this.ensureConnected(null);
     this.client.subscribe(`${TOPIC_PREFIX}/rooms/+`);
     this._emitRoomsChanged();
   }
@@ -238,9 +352,9 @@ export class OnlineManager {
     }
   }
 
-  _waitForRoomRecord(code, timeoutMs = 3000) {
+  _waitForRoomRecord(code, timeoutMs = 3500) {
     const existing = this.rooms.get(code);
-    if (existing && Date.now() - (existing.updatedAt || 0) <= 65000) {
+    if (existing && Date.now() - (existing.updatedAt || 0) <= 300000) {
       return Promise.resolve(existing);
     }
     this.client.subscribe(`${TOPIC_PREFIX}/rooms/${code}`);
@@ -276,7 +390,7 @@ export class OnlineManager {
     hostAvatar = 'defy'
   }) {
     await this.leaveOrCloseSilently();
-    await this.ensureConnected(this.brokerIndex);
+    await this.ensureConnected(null);
 
     let code = generateRoomCode();
     let guard = 0;
@@ -285,7 +399,7 @@ export class OnlineManager {
       guard++;
     }
 
-    // Reconnect on the same broker with LWT so tab closure removes the room from the lobby
+    // Reconnect on the current broker with a fresh clientId and LWT so closing the tab clears the room
     const will = {
       topic: `${TOPIC_PREFIX}/rooms/${code}`,
       payload: '',
@@ -293,7 +407,7 @@ export class OnlineManager {
     };
     this.client.subscribe(`${TOPIC_PREFIX}/rooms/+`);
     this.client.subscribe(`${TOPIC_PREFIX}/room/${code}/to_host`);
-    await this.client.connect({ brokerIndex: this.brokerIndex, will });
+    await this._connectWithWill(this.brokerIndex, will);
 
     const cleanName = (roomName || `Mesa de ${hostName}`).trim().slice(0, 24) || `Mesa ${code}`;
     const cleanHost = (hostName || 'Anfitrião').trim().slice(0, 14) || 'Anfitrião';
@@ -342,6 +456,11 @@ export class OnlineManager {
     this.currentRoom = room;
     this.guestLastSeen.clear();
     this._publishHostRoom(true);
+    setTimeout(() => {
+      if (this.role === 'host' && this.currentRoom?.code === code) {
+        this._publishHostRoom(false);
+      }
+    }, 800);
     this._startHostHeartbeat();
     this._emitRoomState();
     return room;
@@ -555,13 +674,31 @@ export class OnlineManager {
     }
 
     await this.leaveOrCloseSilently();
-    const targetBroker =
-      preferredBrokerIndex !== null && MQTT_BROKERS[preferredBrokerIndex]
-        ? preferredBrokerIndex
-        : this.brokerIndex;
-    await this.ensureConnected(targetBroker);
+    const hasPreferred = preferredBrokerIndex !== null && Boolean(MQTT_BROKERS[preferredBrokerIndex]);
+    await this.ensureConnected(hasPreferred ? preferredBrokerIndex : null);
 
-    const room = await this._waitForRoomRecord(cleanCode, 3000);
+    let room = await this._waitForRoomRecord(cleanCode, 3500);
+    if (!room && !hasPreferred) {
+      const checked = new Set([this.brokerIndex]);
+      for (let bIdx = 0; bIdx < MQTT_BROKERS.length; bIdx++) {
+        if (checked.has(bIdx)) continue;
+        checked.add(bIdx);
+        try {
+          this.rooms.clear();
+          this.client.subscribe(`${TOPIC_PREFIX}/rooms/+`);
+          this.client.subscribe(`${TOPIC_PREFIX}/rooms/${cleanCode}`);
+          await this.client.connect({ brokerIndex: bIdx, timeoutMs: 4000 });
+          this.brokerIndex = bIdx;
+          room = await this._waitForRoomRecord(cleanCode, 2200);
+          if (room) break;
+        } catch {
+          // ignore unreachable backup broker during lookup
+        }
+      }
+      if (!room) {
+        this.ensureConnected(0).catch(() => {});
+      }
+    }
     if (!room) {
       throw new Error('not_found');
     }
@@ -740,8 +877,10 @@ export class OnlineManager {
   _clearTimers() {
     clearInterval(this.hostHeartbeatTimer);
     clearInterval(this.guestHeartbeatTimer);
+    clearTimeout(this._reconnectTimer);
     this.hostHeartbeatTimer = null;
     this.guestHeartbeatTimer = null;
+    this._reconnectTimer = null;
   }
 
   async leaveRoom() {

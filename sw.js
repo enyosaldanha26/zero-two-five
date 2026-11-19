@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zero-two-five-v2';
+const CACHE_NAME = 'zero-two-five-v3';
 
 const APP_SHELL = [
   './',

@@ -1,7 +1,7 @@
 export const MQTT_BROKERS = [
-  { id: 'hivemq', label: 'Global A', url: 'wss://mqtt-dashboard.com:8884/mqtt' },
-  { id: 'emqx', label: 'Global B', url: 'wss://broker.emqx.io:8084/mqtt' },
-  { id: 'emqx-cn', label: 'Backup C', url: 'wss://broker-cn.emqx.io:8084/mqtt' }
+  { id: 'emqx', label: 'Servidor 1', url: 'wss://broker.emqx.io:8084/mqtt' },
+  { id: 'emqx-cn', label: 'Servidor 2', url: 'wss://broker-cn.emqx.io:8084/mqtt' },
+  { id: 'hivemq', label: 'Servidor 3', url: 'wss://mqtt-dashboard.com:8884/mqtt' }
 ];
 
 const textEncoder = new TextEncoder();
@@ -215,13 +215,17 @@ export function decodePacketsFromBuffer(buffer) {
   };
 }
 
+function makeClientId() {
+  return `ztf_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36).slice(-4)}`;
+}
+
 export class MqttWsClient {
   constructor(callbacks = {}) {
     this.callbacks = callbacks;
     this.ws = null;
     this.broker = null;
     this.brokerIndex = 0;
-    this.clientId = `ztf_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36).slice(-4)}`;
+    this.clientId = makeClientId();
     this.status = 'disconnected';
     this.rxBuffer = new Uint8Array(0);
     this.nextPacketId = 1;
@@ -229,6 +233,7 @@ export class MqttWsClient {
     this.subscriptions = new Set();
     this.will = null;
     this.manualDisconnect = false;
+    this._connectSeq = 0;
   }
 
   _setStatus(status) {
@@ -250,9 +255,15 @@ export class MqttWsClient {
     return id;
   }
 
-  async connect({ brokerIndex = 0, will = null, timeoutMs = 4500 } = {}) {
+  async connect({ brokerIndex = 0, will = null, timeoutMs = 7500 } = {}) {
+    const seq = ++this._connectSeq;
     await this.disconnect(true);
+    if (this._connectSeq !== seq) {
+      throw new Error('Connection superseded');
+    }
+
     this.manualDisconnect = false;
+    this.clientId = makeClientId();
     this.brokerIndex = brokerIndex;
     this.broker = MQTT_BROKERS[brokerIndex] || MQTT_BROKERS[0];
     this.will = will;
@@ -265,6 +276,10 @@ export class MqttWsClient {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
+        if (this._connectSeq !== seq) {
+          reject(new Error('Connection superseded'));
+          return;
+        }
         if (err) {
           this._cleanupSocket();
           this._setStatus('error');
@@ -291,17 +306,17 @@ export class MqttWsClient {
       }
 
       ws.onopen = () => {
-        if (this.ws !== ws) return;
+        if (this.ws !== ws || this._connectSeq !== seq) return;
         const pkt = encodeConnectPacket({
           clientId: this.clientId,
-          keepAlive: 25,
+          keepAlive: 120,
           will: this.will
         });
         ws.send(pkt);
       };
 
       ws.onmessage = (event) => {
-        if (this.ws !== ws) return;
+        if (this.ws !== ws || this._connectSeq !== seq) return;
         const chunk = new Uint8Array(event.data);
         const merged = new Uint8Array(this.rxBuffer.length + chunk.length);
         merged.set(this.rxBuffer, 0);
@@ -313,11 +328,10 @@ export class MqttWsClient {
         for (const pkt of packets) {
           if (pkt.type === 'CONNACK') {
             if (pkt.returnCode === 0) {
-              // Re-subscribe any preserved subscriptions cleanly
+              finish(null);
               for (const filter of this.subscriptions) {
                 this._sendRaw(encodeSubscribePacket(this._allocPacketId(), filter));
               }
-              finish(null);
             } else {
               finish(new Error(`MQTT CONNACK refused: ${pkt.returnCode}`));
             }
@@ -336,12 +350,12 @@ export class MqttWsClient {
       };
 
       ws.onerror = () => {
-        if (this.ws !== ws) return;
+        if (this.ws !== ws || this._connectSeq !== seq) return;
         finish(new Error(`WebSocket error on ${this.broker.url}`));
       };
 
       ws.onclose = (ev) => {
-        if (this.ws !== ws) return;
+        if (this.ws !== ws || this._connectSeq !== seq) return;
         if (!settled) {
           finish(new Error(`WebSocket closed (${ev.code}) on ${this.broker.url}`));
           return;
@@ -355,7 +369,7 @@ export class MqttWsClient {
     });
   }
 
-  async connectWithFallback({ will = null, startBrokerIndex = 0 } = {}) {
+  async connectWithFallback({ will = null, startBrokerIndex = 0, seqGuard = null } = {}) {
     const order = [];
     for (let i = 0; i < MQTT_BROKERS.length; i++) {
       order.push((startBrokerIndex + i) % MQTT_BROKERS.length);
@@ -363,11 +377,17 @@ export class MqttWsClient {
 
     let lastErr = null;
     for (const idx of order) {
+      if (seqGuard && !seqGuard()) {
+        throw new Error('Connection superseded');
+      }
       try {
         const broker = await this.connect({ brokerIndex: idx, will });
         return { broker, brokerIndex: idx };
       } catch (err) {
         lastErr = err;
+        if (err && err.message === 'Connection superseded') {
+          throw err;
+        }
       }
     }
     throw lastErr || new Error('All online relays unreachable');
@@ -394,13 +414,20 @@ export class MqttWsClient {
     return this._sendRaw(encodePublishPacket(topic, payloadStr, { retain }));
   }
 
+  pingNow() {
+    if (this.status === 'connected') {
+      return this._sendRaw(encodePingreqPacket());
+    }
+    return false;
+  }
+
   _startKeepAlive() {
     clearInterval(this.pingTimer);
     this.pingTimer = setInterval(() => {
       if (this.status === 'connected') {
         this._sendRaw(encodePingreqPacket());
       }
-    }, 20000);
+    }, 25000);
   }
 
   _cleanupSocket() {

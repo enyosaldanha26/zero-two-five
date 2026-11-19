@@ -125,7 +125,7 @@ function setLanguage(lang) {
     renderThemePicker(document.getElementById('theme-picker'), uiState.theme, uiState.lang, () => {});
     refreshSettingsButtons();
   });
-  updateConnectionBadge(onlineManager?.client?.status || 'disconnected');
+  updateConnectionBadge(onlineManager?.client?.status || 'disconnected', onlineManager?.client?.broker || null);
   if (onlineManager) {
     renderPublicRoomsList(onlineManager.getPublicRooms());
     renderWaitingRoom(onlineManager.currentRoom);
@@ -647,7 +647,7 @@ function updateJokenpoBanner(message, finished) {
 
 // ================= ONLINE LOBBY & ROOMS =================
 
-function updateConnectionBadge(status) {
+function updateConnectionBadge(status, broker = null) {
   const pill = document.getElementById('online-conn-pill');
   const text = document.getElementById('online-conn-text');
   if (!pill || !text) return;
@@ -655,7 +655,7 @@ function updateConnectionBadge(status) {
   pill.classList.remove('is-connected', 'is-connecting', 'is-error');
   if (status === 'connected') {
     pill.classList.add('is-connected');
-    text.textContent = dict.onlineConnected;
+    text.textContent = broker?.label ? `${dict.onlineConnected} · ${broker.label}` : dict.onlineConnected;
   } else if (status === 'connecting') {
     pill.classList.add('is-connecting');
     text.textContent = dict.onlineConnecting;
@@ -708,7 +708,9 @@ function renderPublicRoomsList(rooms = []) {
   const dict = getDict();
 
   if (!rooms || rooms.length === 0) {
-    listEl.innerHTML = `<div class="online-empty-state">${escapeHtml(dict.onlineNoRooms)}</div>`;
+    const isConnectingOrOffline = !onlineManager || !onlineManager.isConnected;
+    const emptyText = isConnectingOrOffline ? `⏳ ${dict.onlineLoadingRooms}` : dict.onlineNoRooms;
+    listEl.innerHTML = `<div class="online-empty-state">${escapeHtml(emptyText)}</div>`;
     return;
   }
 
@@ -865,8 +867,9 @@ async function attemptGuestJoin(code, password = '', errorBoxId = 'join-room-err
 
 function initOnlineManager() {
   onlineManager = new OnlineManager({
-    onConnectionStatus: (status) => {
-      updateConnectionBadge(status);
+    onConnectionStatus: (status, broker) => {
+      updateConnectionBadge(status, broker);
+      renderPublicRoomsList(onlineManager.getPublicRooms());
     },
     onRoomsChanged: (rooms) => {
       renderPublicRoomsList(rooms);
@@ -974,6 +977,15 @@ function initOnlineManager() {
 }
 
 function initOnlineControls() {
+  const safeRefreshDirectory = () => {
+    renderPublicRoomsList(onlineManager.getPublicRooms());
+    onlineManager.refreshDirectory().catch((err) => {
+      if (err?.message !== 'Connection superseded' && onlineManager?.client?.status === 'error') {
+        updateConnectionBadge('error', null);
+      }
+    });
+  };
+
   document.getElementById('open-online-btn').addEventListener('click', () => {
     sound.playUiClick();
     setupConfig.humanName = document.getElementById('player-name-input').value.trim() || 'Você';
@@ -983,7 +995,7 @@ function initOnlineControls() {
     showInlineError('waiting-room-error', '');
     showScreen('online-screen');
     renderWaitingRoom(onlineManager.currentRoom);
-    onlineManager.refreshDirectory().catch(() => updateConnectionBadge('error'));
+    safeRefreshDirectory();
   });
 
   document.getElementById('online-back-btn').addEventListener('click', async () => {
@@ -1000,14 +1012,14 @@ function initOnlineControls() {
       sound.playUiClick();
       setOnlineTab(btn.dataset.tab);
       if (btn.dataset.tab === 'rooms') {
-        onlineManager.refreshDirectory().catch(() => updateConnectionBadge('error'));
+        safeRefreshDirectory();
       }
     });
   });
 
   document.getElementById('online-refresh-btn').addEventListener('click', () => {
     sound.playUiClick();
-    onlineManager.refreshDirectory().catch(() => updateConnectionBadge('error'));
+    safeRefreshDirectory();
   });
 
   document.querySelectorAll('#create-players-picker .seg-btn').forEach((btn) => {
@@ -1523,6 +1535,9 @@ function handleWindowRestore() {
   if (isDesktopApp) {
     fetch('/api/ping').catch(() => {});
   }
+  if (onlineManager) {
+    onlineManager.handleTabVisible();
+  }
   refreshVisibleImages();
   if (gameState && gameState.phase !== 'resolving') {
     renderGame();
@@ -1549,6 +1564,11 @@ function boot() {
   document.addEventListener('visibilitychange', handleWindowRestore);
   window.addEventListener('focus', handleWindowRestore);
   window.addEventListener('beforeunload', () => {
+    if (onlineManager) {
+      onlineManager.leaveOrCloseSilently();
+    }
+  });
+  window.addEventListener('pagehide', () => {
     if (onlineManager) {
       onlineManager.leaveOrCloseSilently();
     }
