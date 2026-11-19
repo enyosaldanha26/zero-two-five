@@ -303,7 +303,6 @@ export function renderGameTable(state, uiState, callbacks) {
       <div class="opp-card-box">
         ${bubbleHtml}
         <div class="seat-avatar-wrap">
-          <div class="bam-tag">BAM!</div>
           <div class="avatar-frame">${renderAvatarSvg(p.avatar)}</div>
           <div class="card-count-badge">${p.hand.length}</div>
         </div>
