@@ -55,6 +55,33 @@ export function refreshVisibleImages() {
 }
 
 export function getSeatLayout(playerCount) {
+  const isMobilePortrait = typeof window !== 'undefined' && window.innerWidth <= 768;
+
+  if (isMobilePortrait) {
+    if (playerCount === 3) {
+      return [
+        { seatClass: 'pos-bottom', stagePos: { x: 50, y: 64, rot: 0 } },
+        { seatClass: 'pos-top-left', stagePos: { x: 24, y: 27, rot: -4 } },
+        { seatClass: 'pos-top-right', stagePos: { x: 76, y: 27, rot: 4 } }
+      ];
+    }
+    if (playerCount === 4) {
+      return [
+        { seatClass: 'pos-bottom', stagePos: { x: 50, y: 64, rot: 0 } },
+        { seatClass: 'pos-left', stagePos: { x: 16, y: 46, rot: -5 } },
+        { seatClass: 'pos-top-center', stagePos: { x: 50, y: 28, rot: 1 } },
+        { seatClass: 'pos-right', stagePos: { x: 84, y: 46, rot: 5 } }
+      ];
+    }
+    return [
+      { seatClass: 'pos-bottom', stagePos: { x: 50, y: 65, rot: 0 } },
+      { seatClass: 'pos-mid-left', stagePos: { x: 15, y: 49, rot: -5 } },
+      { seatClass: 'pos-top-left', stagePos: { x: 32, y: 28, rot: -3 } },
+      { seatClass: 'pos-top-right', stagePos: { x: 68, y: 28, rot: 3 } },
+      { seatClass: 'pos-mid-right', stagePos: { x: 85, y: 49, rot: 5 } }
+    ];
+  }
+
   if (playerCount === 3) {
     return [
       { seatClass: 'pos-bottom', stagePos: { x: 50, y: 80, rot: 0 } },
@@ -208,7 +235,7 @@ export function updateHandOverlap(state) {
 
   let overlapPx;
   if (isMobilePortrait && totalCards > 1) {
-    const cardW = Math.min(68, Math.max(52, Math.round(vw * 0.145)));
+    const cardW = Math.min(75, Math.max(57, Math.round(vw * 0.16)));
     const avail = Math.max(180, vw - 22);
     const maxStep = (avail - cardW) / (totalCards - 1);
     overlapPx = Math.min(-10, Math.floor(maxStep - cardW));
@@ -453,6 +480,7 @@ export function renderGameTable(state, uiState, callbacks) {
   } else {
     instText.textContent = '...';
   }
+  instBar.style.visibility = state.phase === 'playing' ? 'visible' : 'hidden';
 
   // Human Hand
   const handEl = document.getElementById('human-hand');
