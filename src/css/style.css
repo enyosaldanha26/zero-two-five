@@ -951,6 +951,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
 }
 
 .direction-ring {
@@ -1896,6 +1897,9 @@ body {
   }
 
   /* Center Play Stage below top opponent strip */
+  .table-arena {
+    z-index: 26;
+  }
   .center-zone {
     top: 61%;
     left: 50%;
@@ -1920,7 +1924,7 @@ body {
     font-size: 1rem;
   }
   .comic-callout {
-    top: 92%;
+    top: 103%;
     max-width: min(260px, 84vw);
     padding: 6px 14px;
     gap: 2px;
