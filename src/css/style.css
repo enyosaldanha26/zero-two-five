@@ -1778,6 +1778,10 @@ body {
     gap: 4px;
     flex-wrap: nowrap;
   }
+  .hud-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
   .mini-logo {
     font-size: 0.72rem;
     padding: 2px 5px;
@@ -1790,6 +1794,7 @@ body {
     padding: 3px 6px;
   }
   .reserve-box {
+    margin-right: auto;
     gap: 3px;
     padding: 2px 5px;
   }
@@ -1831,17 +1836,18 @@ body {
     border-radius: 12px;
     box-shadow: 3px 3px 0 var(--ink);
   }
-  .avatar-frame {
-    width: 32px;
-    height: 32px;
-    border-width: 2px;
-    border-radius: 8px;
+  .opp-seat .avatar-frame,
+  .human-profile-panel .avatar-frame {
+    display: none;
+  }
+  .seat-avatar-wrap {
+    display: flex;
+    align-items: center;
   }
   .card-count-badge {
-    font-size: 0.65rem;
-    padding: 1px 5px;
-    bottom: -4px;
-    right: -4px;
+    position: static;
+    font-size: 0.66rem;
+    padding: 2px 6px;
   }
   .opp-info {
     gap: 2px;
@@ -1869,15 +1875,15 @@ body {
   }
 
   .opp-seat.pos-top-left {
-    top: 1.5%;
+    top: 1%;
     left: 2%;
   }
   .opp-seat.pos-top-right {
-    top: 1.5%;
+    top: 1%;
     right: 2%;
   }
   .opp-seat.pos-top-center {
-    top: 1%;
+    top: 0.5%;
     left: 50%;
     right: auto;
     transform: translateX(-50%);
@@ -1888,12 +1894,12 @@ body {
   .opp-seat.pos-left,
   .opp-seat.pos-mid-left {
     left: 2%;
-    top: 14.5%;
+    top: 12.5%;
   }
   .opp-seat.pos-right,
   .opp-seat.pos-mid-right {
     right: 2%;
-    top: 14.5%;
+    top: 12.5%;
   }
 
   /* Center Play Stage below top opponent strip */
