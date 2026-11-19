@@ -1,0 +1,31 @@
+{
+  "name": "Zero Two Five",
+  "short_name": "ZeroTwoFive",
+  "description": "Um jogo de Ênyo Saldanha e Eurico Cunha — Pedra, Papel, Tesoura... na medida certa!",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#3e0408",
+  "theme_color": "#df1d24",
+  "icons": [
+    {
+      "src": "assets/tokens/2_token.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/tokens/0_token.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/tokens/5_token.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
