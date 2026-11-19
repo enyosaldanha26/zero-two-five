@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zero-two-five-v1';
+const CACHE_NAME = 'zero-two-five-v2';
 
 const APP_SHELL = [
   './',
@@ -11,6 +11,8 @@ const APP_SHELL = [
   './src/js/ai.js',
   './src/js/audio.js',
   './src/js/constants.js',
+  './src/js/mqtt_client.js',
+  './src/js/online.js',
   './assets/tokens/0_token.png',
   './assets/tokens/0_verso.png',
   './assets/tokens/2_token.png',

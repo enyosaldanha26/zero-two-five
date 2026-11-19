@@ -55,16 +55,15 @@ export function createMatchState(config = {}) {
   const difficulty = ['casual', 'tactical', 'master'].includes(config.difficulty)
     ? config.difficulty
     : 'tactical';
-  const humanName = (config.humanName || 'Você').trim().slice(0, 14) || 'Você';
-  const humanAvatar = config.humanAvatar || 'defy';
 
-  const aiPool = AVATARS.filter((a) => a.id !== humanAvatar);
-  const players = [
-    {
-      index: 0,
-      name: humanName,
-      avatar: humanAvatar,
-      isHuman: true,
+  let players;
+  if (Array.isArray(config.customPlayers) && config.customPlayers.length === playerCount) {
+    players = config.customPlayers.map((p, idx) => ({
+      index: idx,
+      name: (p.name || `Jogador ${idx + 1}`).trim().slice(0, 14) || `Jogador ${idx + 1}`,
+      avatar: p.avatar || AVATARS[idx % AVATARS.length].id,
+      isHuman: Boolean(p.isHuman),
+      peerId: p.peerId || null,
       hand: [],
       wins: 0,
       tokens: [],
@@ -72,24 +71,45 @@ export function createMatchState(config = {}) {
       bidTarget: null,
       totalWinsAllRounds: 0,
       tiesCaused: 0
+    }));
+  } else {
+    const humanName = (config.humanName || 'Você').trim().slice(0, 14) || 'Você';
+    const humanAvatar = config.humanAvatar || 'defy';
+    const aiPool = AVATARS.filter((a) => a.id !== humanAvatar);
+    players = [
+      {
+        index: 0,
+        name: humanName,
+        avatar: humanAvatar,
+        isHuman: true,
+        peerId: null,
+        hand: [],
+        wins: 0,
+        tokens: [],
+        bidCard: null,
+        bidTarget: null,
+        totalWinsAllRounds: 0,
+        tiesCaused: 0
+      }
+    ];
+
+    for (let i = 1; i < playerCount; i++) {
+      const av = aiPool[(i - 1) % aiPool.length];
+      players.push({
+        index: i,
+        name: av.name,
+        avatar: av.id,
+        isHuman: false,
+        peerId: null,
+        hand: [],
+        wins: 0,
+        tokens: [],
+        bidCard: null,
+        bidTarget: null,
+        totalWinsAllRounds: 0,
+        tiesCaused: 0
+      });
     }
-  ];
-
-  for (let i = 1; i < playerCount; i++) {
-    const av = aiPool[(i - 1) % aiPool.length];
-    players.push({
-      index: i,
-      name: av.name,
-      avatar: av.id,
-      isHuman: false,
-      hand: [],
-      wins: 0,
-      tokens: [],
-      bidCard: null,
-      bidTarget: null,
-      totalWinsAllRounds: 0,
-      tiesCaused: 0
-    });
   }
 
   const state = {

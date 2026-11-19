@@ -93,10 +93,16 @@
           </div>
 
           <div class="menu-actions">
-            <button id="start-game-btn" type="button" class="btn-comic btn-play">
-              <span>▶</span>
-              <span data-i18n="playNow">Jogar Partida</span>
-            </button>
+            <div class="menu-primary-actions">
+              <button id="start-game-btn" type="button" class="btn-comic btn-play">
+                <span>▶</span>
+                <span data-i18n="playOfflineBtn">Jogar vs IA</span>
+              </button>
+              <button id="open-online-btn" type="button" class="btn-comic btn-bid">
+                <span>🌐</span>
+                <span data-i18n="playOnlineBtn">Modo Online</span>
+              </button>
+            </div>
             <div class="menu-secondary-actions">
               <button id="open-rules-menu-btn" type="button" class="btn-comic btn-secondary">
                 <span>📖</span>
@@ -110,6 +116,168 @@
                 <span>🚪</span>
                 <span data-i18n="quitDesktop">Sair para Desktop</span>
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ONLINE LOBBY ================= -->
+    <section id="online-screen" class="screen">
+      <div class="comic-bg-rays"></div>
+      <div class="comic-bg-halftone"></div>
+
+      <div class="online-container">
+        <header class="online-header">
+          <button id="online-back-btn" type="button" class="btn-comic btn-small btn-secondary" data-i18n="onlineBackBtn">← Menu</button>
+          <h1 class="online-title" data-i18n="onlineTitle">Zero Two Five Online</h1>
+          <div class="conn-pill is-connecting" id="online-conn-pill">
+            <span class="conn-dot"></span>
+            <span id="online-conn-text" data-i18n="onlineConnecting">Conectando...</span>
+          </div>
+        </header>
+
+        <div class="online-card">
+          <div id="online-hub-view">
+            <div class="online-tabs" id="online-tabs">
+              <button type="button" class="online-tab-btn active" data-tab="rooms" data-i18n="onlineTabRooms">📋 Salas Criadas</button>
+              <button type="button" class="online-tab-btn" data-tab="create" data-i18n="onlineTabCreate">➕ Criar Sala</button>
+              <button type="button" class="online-tab-btn" data-tab="join" data-i18n="onlineTabJoin">🔑 Entrar com Código</button>
+            </div>
+
+            <!-- Tab 1: Salas Criadas -->
+            <div id="tab-online-rooms" class="online-tab-panel active">
+              <div class="online-rooms-toolbar">
+                <span class="setup-label" data-i18n="onlineRoomsHeader">Salas Disponíveis</span>
+                <button id="online-refresh-btn" type="button" class="btn-comic btn-small btn-secondary">
+                  <span>🔄</span>
+                  <span data-i18n="onlineRefreshBtn">Atualizar</span>
+                </button>
+              </div>
+              <div id="online-rooms-list" class="online-rooms-list"></div>
+            </div>
+
+            <!-- Tab 2: Criar Sala -->
+            <div id="tab-online-create" class="online-tab-panel hidden">
+              <div class="online-form-grid">
+                <div class="setup-group">
+                  <label class="setup-label" for="create-room-name" data-i18n="onlineRoomNameLabel">Nome da Sala</label>
+                  <input id="create-room-name" class="comic-input" type="text" maxlength="24" placeholder="Mesa do Zero Two Five" />
+                </div>
+
+                <div class="online-two-col">
+                  <div class="setup-group">
+                    <label class="setup-label" data-i18n="playersLabel">Jogadores</label>
+                    <div class="segmented" id="create-players-picker">
+                      <button type="button" class="seg-btn" data-players="3">3</button>
+                      <button type="button" class="seg-btn active" data-players="4">4</button>
+                      <button type="button" class="seg-btn" data-players="5">5</button>
+                    </div>
+                  </div>
+                  <div class="setup-group">
+                    <label class="setup-label" data-i18n="modeLabel">Modo de Jogo</label>
+                    <div class="segmented" id="create-mode-picker">
+                      <button type="button" class="seg-btn active" data-mode="basic" data-i18n="modeBasic">Básico</button>
+                      <button type="button" class="seg-btn" data-mode="advanced" data-i18n="modeAdvanced">Avançado</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="setup-group">
+                  <label class="setup-label" data-i18n="onlineVisibilityLabel">Tipo de Sala</label>
+                  <div class="visibility-cards" id="create-visibility-picker">
+                    <button type="button" class="vis-card active" data-vis="open">
+                      <strong>🔓 <span data-i18n="onlineVisOpen">Sala Livre</span></strong>
+                      <span data-i18n="onlineVisOpenDesc">Aparece na lista e entra sem código ou senha</span>
+                    </button>
+                    <button type="button" class="vis-card" data-vis="code">
+                      <strong>🔑 <span data-i18n="onlineVisCode">Sala com Código</span></strong>
+                      <span data-i18n="onlineVisCodeDesc">Sala privada: entra só com o código</span>
+                    </button>
+                    <button type="button" class="vis-card" data-vis="code_password">
+                      <strong>🔒 <span data-i18n="onlineVisCodePwd">Código e Senha</span></strong>
+                      <span data-i18n="onlineVisCodePwdDesc">Aparece na lista com cadeado e exige senha</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="setup-group hidden" id="create-password-group">
+                  <label class="setup-label" for="create-room-password" data-i18n="onlinePasswordLabel">Senha da Sala</label>
+                  <input id="create-room-password" class="comic-input" type="password" maxlength="20" placeholder="Mín. 1 caractere" />
+                </div>
+
+                <div class="online-ai-row">
+                  <label class="comic-check">
+                    <input id="create-autofill-ai" type="checkbox" checked />
+                    <span>🤖 <strong data-i18n="onlineAutoFillAi">Autocompletar vagas vazias com IA</strong></span>
+                  </label>
+                  <div class="segmented" id="create-ai-diff-picker">
+                    <button type="button" class="seg-btn" data-diff="casual" data-i18n="diffCasual">Casual</button>
+                    <button type="button" class="seg-btn active" data-diff="tactical" data-i18n="diffTactical">Tático</button>
+                    <button type="button" class="seg-btn" data-diff="master" data-i18n="diffMaster">Mestre</button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="create-room-error" class="online-error-box hidden"></div>
+
+              <button id="create-room-submit-btn" type="button" class="btn-comic btn-play">
+                <span>🚀</span>
+                <span data-i18n="onlineCreateSubmit">Criar Sala</span>
+              </button>
+            </div>
+
+            <!-- Tab 3: Entrar com Código -->
+            <div id="tab-online-join" class="online-tab-panel hidden">
+              <div class="online-form-grid">
+                <div class="setup-group">
+                  <label class="setup-label" for="join-room-code" data-i18n="onlineJoinCodeLabel">Código da Sala</label>
+                  <input id="join-room-code" class="comic-input code-input" type="text" maxlength="8" placeholder="Ex: A7K9P" />
+                </div>
+                <div class="setup-group">
+                  <label class="setup-label" for="join-room-password" data-i18n="onlineJoinPwdLabel">Senha (se a sala exigir)</label>
+                  <input id="join-room-password" class="comic-input" type="password" maxlength="20" />
+                </div>
+              </div>
+              <div id="join-room-error" class="online-error-box hidden"></div>
+              <button id="join-room-submit-btn" type="button" class="btn-comic btn-play">
+                <span>🚪</span>
+                <span data-i18n="onlineJoinSubmit">Entrar na Sala</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Waiting Room View -->
+          <div id="online-waiting-view" class="waiting-room-view hidden">
+            <div class="waiting-header">
+              <div>
+                <h2 id="waiting-room-title">Mesa</h2>
+                <div class="waiting-meta-pills" id="waiting-room-pills"></div>
+              </div>
+              <div class="code-share-box">
+                <span class="code-badge" id="waiting-room-code">A7K9P</span>
+                <button id="copy-code-btn" type="button" class="btn-comic btn-small btn-secondary" data-i18n="onlineCopyCode">Copiar Código</button>
+                <button id="copy-link-btn" type="button" class="btn-comic btn-small btn-bid" data-i18n="onlineCopyLink">Copiar Link</button>
+              </div>
+            </div>
+
+            <div id="waiting-seats-list" class="waiting-seats-list"></div>
+            <div id="waiting-room-error" class="online-error-box hidden"></div>
+
+            <div id="waiting-host-controls" class="waiting-footer-controls hidden">
+              <label class="comic-check">
+                <input id="waiting-autofill-toggle" type="checkbox" checked />
+                <span>🤖 <strong data-i18n="onlineAutoFillAi">Autocompletar vagas vazias com IA</strong></span>
+              </label>
+              <div class="waiting-action-btns">
+                <button id="waiting-close-btn" type="button" class="btn-comic btn-danger" data-i18n="onlineCloseRoom">Fechar Sala</button>
+                <button id="waiting-start-btn" type="button" class="btn-comic btn-play">▶ <span data-i18n="onlineStartMatch">Iniciar Partida</span></button>
+              </div>
+            </div>
+
+            <div id="waiting-guest-controls" class="waiting-footer-controls hidden">
+              <span class="waiting-status-note">⏳ <span data-i18n="onlineWaitingHostMsg">Aguardando o anfitrião iniciar a partida...</span></span>
+              <button id="waiting-leave-btn" type="button" class="btn-comic btn-danger" data-i18n="onlineLeaveRoom">Sair da Sala</button>
             </div>
           </div>
         </div>
@@ -131,6 +299,7 @@
           <div class="hud-pill" id="hud-round-pill">Rodada 1/5</div>
           <div class="hud-pill hud-pill-accent" id="hud-dispute-pill">Disputa 1/12</div>
           <div class="hud-pill hud-pill-mode" id="hud-mode-pill">Básico</div>
+          <div class="hud-pill hud-pill-online hidden" id="hud-online-pill">🌐</div>
         </div>
 
         <div class="hud-center">
@@ -339,6 +508,24 @@
             <button id="pause-leave-btn" type="button" class="btn-comic btn-danger" data-i18n="leaveMatchBtn">🚪 Sair da Partida</button>
             <button id="pause-quit-btn" type="button" class="btn-comic btn-danger hidden" data-i18n="quitDesktop">Sair para Desktop</button>
           </div>
+        </div>
+      </div>
+
+      <!-- Locked Room Password Modal -->
+      <div id="room-password-modal" class="comic-modal hidden">
+        <div class="modal-header">
+          <h2 id="pwd-modal-title" data-i18n="onlineEnterPasswordTitle">Senha da Sala</h2>
+          <button type="button" class="modal-close-btn" data-close-modal="room-password-modal">✕</button>
+        </div>
+        <div class="modal-body">
+          <p id="pwd-modal-room-name" class="pwd-room-label"></p>
+          <p class="pwd-hint" data-i18n="onlinePasswordPromptHint">Digite a senha desta sala para entrar sem precisar do código:</p>
+          <input id="pwd-modal-input" class="comic-input" type="password" maxlength="20" />
+          <div id="pwd-modal-error" class="online-error-box hidden"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-comic btn-secondary" data-close-modal="room-password-modal" data-i18n="close">Fechar</button>
+          <button id="pwd-modal-submit-btn" type="button" class="btn-comic btn-play" data-i18n="onlineJoinBtn">Entrar</button>
         </div>
       </div>
     </div>

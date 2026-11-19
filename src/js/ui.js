@@ -13,6 +13,15 @@ import { getLegalCards, evaluateTable, mustPlaceBidNow, canPlaceBidNow } from '.
 
 const preloadedImageCache = new Map();
 
+export function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function ensureCachedImage(src) {
   if (!src) return;
   if (preloadedImageCache.has(src)) return preloadedImageCache.get(src);
@@ -61,24 +70,24 @@ export function getSeatLayout(playerCount) {
     if (playerCount === 3) {
       return [
         { seatClass: 'pos-bottom', stagePos: { x: 50, y: 78, rot: 0 } },
-        { seatClass: 'pos-top-left', stagePos: { x: 24, y: 34, rot: -3 } },
-        { seatClass: 'pos-top-right', stagePos: { x: 76, y: 34, rot: 3 } }
+        { seatClass: 'pos-top-left', stagePos: { x: 25, y: 27, rot: -3 } },
+        { seatClass: 'pos-top-right', stagePos: { x: 73, y: 27, rot: 3 } }
       ];
     }
     if (playerCount === 4) {
       return [
-        { seatClass: 'pos-bottom', stagePos: { x: 50, y: 78, rot: 0 } },
-        { seatClass: 'pos-left', stagePos: { x: 16, y: 53, rot: 0 } },
-        { seatClass: 'pos-top-center', stagePos: { x: 50, y: 28, rot: 0 } },
-        { seatClass: 'pos-right', stagePos: { x: 84, y: 53, rot: 0 } }
+        { seatClass: 'pos-bottom', stagePos: { x: 50, y: 80, rot: 0 } },
+        { seatClass: 'pos-left', stagePos: { x: 16, y: 52, rot: 0 } },
+        { seatClass: 'pos-top-center', stagePos: { x: 50, y: 22, rot: 0 } },
+        { seatClass: 'pos-right', stagePos: { x: 84, y: 52, rot: 0 } }
       ];
     }
     return [
-      { seatClass: 'pos-bottom', stagePos: { x: 50, y: 78, rot: 0 } },
-      { seatClass: 'pos-mid-left', stagePos: { x: 14, y: 58, rot: -4 } },
-      { seatClass: 'pos-top-left', stagePos: { x: 35, y: 29, rot: -2 } },
-      { seatClass: 'pos-top-right', stagePos: { x: 65, y: 29, rot: 2 } },
-      { seatClass: 'pos-mid-right', stagePos: { x: 86, y: 58, rot: 4 } }
+      { seatClass: 'pos-bottom', stagePos: { x: 50, y: 80, rot: 0 } },
+      { seatClass: 'pos-mid-left', stagePos: { x: 14, y: 56, rot: -4 } },
+      { seatClass: 'pos-top-left', stagePos: { x: 34, y: 23, rot: -2 } },
+      { seatClass: 'pos-top-right', stagePos: { x: 63, y: 23, rot: 2 } },
+      { seatClass: 'pos-mid-right', stagePos: { x: 86, y: 56, rot: 4 } }
     ];
   }
 
@@ -224,10 +233,11 @@ export function renderRulesContent(container, lang) {
   `;
 }
 
-export function updateHandOverlap(state) {
+export function updateHandOverlap(state, localSeatIndex = 0) {
   const handEl = document.getElementById('human-hand');
-  if (!handEl || !state || !state.players || !state.players[0]) return;
-  const totalCards = state.players[0].hand.length;
+  const localPlayer = state && state.players && state.players[localSeatIndex];
+  if (!handEl || !localPlayer) return;
+  const totalCards = localPlayer.hand.length;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const isMobilePortrait = vw <= 768;
@@ -253,6 +263,7 @@ export function updateHandOverlap(state) {
 export function renderGameTable(state, uiState, callbacks) {
   const dict = I18N[uiState.lang] || I18N.pt;
   const layout = getSeatLayout(state.playerCount);
+  const myIndex = Number.isInteger(uiState.localSeatIndex) ? uiState.localSeatIndex : 0;
   document.getElementById('game-screen').dataset.players = String(state.playerCount);
 
   // Top HUD
@@ -265,15 +276,15 @@ export function renderGameTable(state, uiState, callbacks) {
   document.getElementById('res-2').textContent = state.tokenReserve[2];
   document.getElementById('res-5').textContent = state.tokenReserve[5];
 
-  // Opponents
+  // Opponents (rotated clockwise relative to myIndex)
   const oppLayer = document.getElementById('opponents-layer');
   oppLayer.innerHTML = '';
 
-  for (let i = 1; i < state.playerCount; i++) {
+  for (let rel = 1; rel < state.playerCount; rel++) {
+    const i = (myIndex + rel) % state.playerCount;
     const p = state.players[i];
-    const seatMeta = layout[i];
+    const seatMeta = layout[rel];
     const isTurn = state.phase === 'playing' && state.turnIndex === i;
-    const isLead = state.leadPlayerIndex === i;
     const validScore =
       state.mode === 'basic'
         ? [0, 2, 5].includes(p.wins)
@@ -288,16 +299,18 @@ export function renderGameTable(state, uiState, callbacks) {
       .join('');
 
     const bidHtml = p.bidCard
-      ? `<div class="bid-mini-slot" title="${dict.bidLabel}: ${p.bidTarget}">
+      ? `<div class="bid-mini-slot" title="${escapeHtml(dict.bidLabel)}: ${p.bidTarget}">
            <img src="${getCardImagePath(p.bidCard.suit, p.bidCard.number)}" alt="" />
-           <span>${dict.bidLabel}: ${p.bidTarget}</span>
+           <span>${escapeHtml(dict.bidLabel)}: ${p.bidTarget}</span>
          </div>`
       : '';
 
     const bubbleHtml =
       uiState.speechBubbles[i] && Date.now() < uiState.speechBubbles[i].until
-        ? `<div class="speech-bubble">${uiState.speechBubbles[i].text}</div>`
+        ? `<div class="speech-bubble">${escapeHtml(uiState.speechBubbles[i].text)}</div>`
         : '';
+
+    const kindBadge = uiState.isOnline && p.isHuman === false ? '🤖 ' : '';
 
     seatEl.innerHTML = `
       <div class="opp-card-box">
@@ -308,15 +321,15 @@ export function renderGameTable(state, uiState, callbacks) {
         </div>
         <div class="opp-info">
           <div class="opp-name-line">
-            <span class="seat-name">${p.name}</span>
+            <span class="seat-name">${kindBadge}${escapeHtml(p.name)}</span>
           </div>
           <div class="opp-stats-line">
-            <div class="wins-pill ${validScore ? 'valid-score' : ''}" title="${dict.winsShort}">
+            <div class="wins-pill ${validScore ? 'valid-score' : ''}" title="${escapeHtml(dict.winsShort)}">
               <span class="trophy-icon">🏆</span><span>${p.wins}</span>
             </div>
             <div class="tokens-row">${tokensHtml}</div>
+            ${bidHtml}
           </div>
-          ${bidHtml}
         </div>
       </div>
     `;
@@ -329,17 +342,18 @@ export function renderGameTable(state, uiState, callbacks) {
   const statusText = document.getElementById('center-status-text');
   const evalNow = evaluateTable(state.tableCards);
 
-  statusBanner.classList.remove('tie-warning');
+  statusBanner.classList.remove('tie-warning', 'is-waiting');
   if (state.tableCards.length === 0) {
     const leadName = state.players[state.leadPlayerIndex].name;
-    statusText.textContent = `${leadName}: ${dict.waitingLead}`;
+    statusBanner.classList.add('is-waiting');
+    statusText.innerHTML = `<span class="status-label">${escapeHtml(leadName)}:</span> <span class="status-value">${escapeHtml(dict.waitingLead)}</span>`;
   } else if (evalNow.isTie) {
     statusBanner.classList.add('tie-warning');
-    statusText.textContent = `⚠️ ${dict.tieWarning}`;
+    statusText.innerHTML = `<span class="status-label">⚠️ 3 ${uiState.lang === 'en' ? 'Suits' : 'Naipes'}</span> <span class="status-value">${uiState.lang === 'en' ? 'TIE INCOMING!' : 'EMPATE!'}</span>`;
   } else {
     const leadSuit = state.tableCards[0].card.suit;
     const leadInfo = SUIT_INFO[leadSuit];
-    statusText.textContent = `${dict.suitLeadLabel}: ${leadInfo.emoji} ${leadInfo.name[uiState.lang]}`;
+    statusText.innerHTML = `<span class="status-label">${escapeHtml(dict.suitLeadLabel)}:</span> <span class="status-value">${leadInfo.emoji} ${escapeHtml(leadInfo.name[uiState.lang])}</span>`;
   }
 
   const stage = document.getElementById('played-cards-stage');
@@ -355,7 +369,8 @@ export function renderGameTable(state, uiState, callbacks) {
 
   for (const play of state.tableCards) {
     const p = state.players[play.playerIndex];
-    const pos = layout[play.playerIndex].stagePos;
+    const rel = (play.playerIndex - myIndex + state.playerCount) % state.playerCount;
+    const pos = layout[rel].stagePos;
     const isCurrentWinner =
       !evalNow.isTie && evalNow.winningPlay && evalNow.winningPlay.playerIndex === play.playerIndex;
     const playKey = `${play.playerIndex}:${play.card.id}`;
@@ -371,9 +386,9 @@ export function renderGameTable(state, uiState, callbacks) {
       slot.style.top = `${pos.y}%`;
       slot.innerHTML = `
         <div class="table-card-frame" style="transform: rotate(${pos.rot}deg)">
-          <img src="${cardSrc}" alt="${play.card.id}" decoding="sync" loading="eager" />
+          <img src="${cardSrc}" alt="${escapeHtml(play.card.id)}" decoding="sync" loading="eager" />
         </div>
-        <div class="table-play-owner">${p.name}</div>
+        <div class="table-play-owner">${escapeHtml(p.name)}</div>
       `;
       stage.appendChild(slot);
     } else {
@@ -397,8 +412,8 @@ export function renderGameTable(state, uiState, callbacks) {
   }
 
   // Human Dock
-  const human = state.players[0];
-  const isHumanTurn = state.phase === 'playing' && state.turnIndex === 0;
+  const human = state.players[myIndex];
+  const isHumanTurn = state.phase === 'playing' && state.turnIndex === myIndex;
   const humanPanel = document.getElementById('human-profile-panel');
   humanPanel.classList.toggle('active-turn', isHumanTurn);
 
@@ -423,7 +438,7 @@ export function renderGameTable(state, uiState, callbacks) {
     humanBidSlot.classList.remove('hidden');
     humanBidSlot.innerHTML = `
       <img src="${getCardImagePath(human.bidCard.suit, human.bidCard.number)}" alt="" />
-      <span>${dict.bidLabel}: ${human.bidTarget}</span>
+      <span>${escapeHtml(dict.bidLabel)}: ${human.bidTarget}</span>
     `;
   } else {
     humanBidSlot.classList.add('hidden');
@@ -436,8 +451,8 @@ export function renderGameTable(state, uiState, callbacks) {
 
   const placeBidBtn = document.getElementById('place-bid-btn');
   const placeBidLabel = document.getElementById('place-bid-label');
-  const canBid = canPlaceBidNow(state, 0);
-  const mandatoryBid = isHumanTurn && mustPlaceBidNow(state, 0);
+  const canBid = canPlaceBidNow(state, myIndex);
+  const mandatoryBid = isHumanTurn && mustPlaceBidNow(state, myIndex);
 
   if (mandatoryBid) {
     uiState.bidSelectionMode = true;
@@ -484,13 +499,13 @@ export function renderGameTable(state, uiState, callbacks) {
   // Human Hand
   const handEl = document.getElementById('human-hand');
   handEl.innerHTML = '';
-  const legalIds = new Set(isHumanTurn ? getLegalCards(state, 0).map((c) => c.id) : []);
+  const legalIds = new Set(isHumanTurn ? getLegalCards(state, myIndex).map((c) => c.id) : []);
   const totalCards = human.hand.length;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const isMobilePortrait = vw <= 768;
   const isMobileLandscape = !isMobilePortrait && vw <= 960 && vh <= 520;
-  updateHandOverlap(state);
+  updateHandOverlap(state, myIndex);
 
   human.hand.forEach((card, idx) => {
     const btn = document.createElement('button');
@@ -505,14 +520,14 @@ export function renderGameTable(state, uiState, callbacks) {
       btn.className = 'hand-card-btn bid-selectable';
       const bidVal = SUIT_INFO[card.suit].value;
       btn.innerHTML = `
-        <span class="bid-tag-overlay">${dict.bidLabel}: ${bidVal}</span>
-        <img src="${getCardImagePath(card.suit, card.number)}" alt="${card.id}" decoding="sync" loading="eager" />
+        <span class="bid-tag-overlay">${escapeHtml(dict.bidLabel)}: ${bidVal}</span>
+        <img src="${getCardImagePath(card.suit, card.number)}" alt="${escapeHtml(card.id)}" decoding="sync" loading="eager" />
       `;
       btn.addEventListener('click', () => callbacks.onBidCardClick(card.id));
     } else {
       const isLegal = isHumanTurn && legalIds.has(card.id);
       btn.className = `hand-card-btn ${isHumanTurn ? (isLegal ? 'legal' : 'illegal') : ''}`;
-      btn.innerHTML = `<img src="${getCardImagePath(card.suit, card.number)}" alt="${card.id}" decoding="sync" loading="eager" />`;
+      btn.innerHTML = `<img src="${getCardImagePath(card.suit, card.number)}" alt="${escapeHtml(card.id)}" decoding="sync" loading="eager" />`;
       if (isLegal) {
         btn.addEventListener('click', () => callbacks.onPlayCardClick(card.id));
       }
@@ -563,11 +578,11 @@ export function renderRoundSummaryModal(summary, state, lang) {
         <div class="summary-row ${r.earnedToken !== null ? 'winner-row' : ''}">
           <div class="summary-av">${renderAvatarSvg(r.avatar)}</div>
           <div class="summary-meta">
-            <strong>${r.name}</strong>
-            <span>${dict.winsShort}: ${r.wins}${bidInfo}</span>
+            <strong>${escapeHtml(r.name)}</strong>
+            <span>${escapeHtml(dict.winsShort)}: ${r.wins}${bidInfo}</span>
           </div>
           ${earnedHtml}
-          <div class="tokens-row" title="${dict.tokensShort}: ${r.tokens.length}/3">${allTokens || '—'}</div>
+          <div class="tokens-row" title="${escapeHtml(dict.tokensShort)}: ${r.tokens.length}/3">${allTokens || '—'}</div>
         </div>
       `;
     })
@@ -577,14 +592,14 @@ export function renderRoundSummaryModal(summary, state, lang) {
   document.getElementById('round-next-btn').textContent = dict.nextRoundBtn;
 }
 
-export function renderGameOverModal(gameResult, lang) {
+export function renderGameOverModal(gameResult, lang, localSeatIndex = 0) {
   const dict = I18N[lang] || I18N.pt;
   document.getElementById('gameover-modal-title').textContent = dict.gameOverTitle;
 
-  const winnersNames = gameResult.tiedWinners.map((w) => w.name).join(' & ');
+  const winnersNames = gameResult.tiedWinners.map((w) => escapeHtml(w.name)).join(' & ');
   const headline = gameResult.isTie
-    ? `🤝 ${dict.tiedVictory} (${winnersNames})`
-    : `👑 ${winnersNames} — ${dict.champion}`;
+    ? `🤝 ${escapeHtml(dict.tiedVictory)} (${winnersNames})`
+    : `👑 ${winnersNames} — ${escapeHtml(dict.champion)}`;
 
   const rowsHtml = gameResult.standings
     .map((s, idx) => {
@@ -597,8 +612,8 @@ export function renderGameOverModal(gameResult, lang) {
         <div class="summary-row ${isWinner ? 'winner-row' : ''}">
           <div class="summary-av">${renderAvatarSvg(s.avatar)}</div>
           <div class="summary-meta">
-            <strong>#${idx + 1} ${s.name}</strong>
-            <span>${dict.tokensShort}: ${s.tokenCount} • ${dict.pointsTotal}: ${s.pointsSum} • ${dict.winsShort}: ${s.totalWinsAllRounds}</span>
+            <strong>#${idx + 1} ${escapeHtml(s.name)}</strong>
+            <span>${escapeHtml(dict.tokensShort)}: ${s.tokenCount} • ${escapeHtml(dict.pointsTotal)}: ${s.pointsSum} • ${escapeHtml(dict.winsShort)}: ${s.totalWinsAllRounds}</span>
           </div>
           <div class="tokens-row">${tokensHtml || '—'}</div>
           <div>${isWinner ? '🏆' : ''}</div>
@@ -613,7 +628,9 @@ export function renderGameOverModal(gameResult, lang) {
   `;
 
   const jokenpoBtn = document.getElementById('tie-jokenpo-btn');
-  const humanInTie = gameResult.tiedWinners.some((w) => w.isHuman);
+  const humanInTie = gameResult.tiedWinners.some(
+    (w) => w.playerIndex === localSeatIndex && w.isHuman
+  );
   jokenpoBtn.classList.toggle('hidden', !(gameResult.isTie && humanInTie));
   jokenpoBtn.textContent = dict.tieJokenpoBtn;
   document.getElementById('play-again-btn').textContent = dict.playAgainBtn;
@@ -631,11 +648,11 @@ export function renderPauseScoreboard(state, lang) {
       const pts = p.tokens.reduce((acc, v) => acc + v, 0);
       const bidInfo =
         state.mode === 'advanced'
-          ? ` • ${dict.bidLabel}: ${p.bidTarget !== null ? p.bidTarget : '?'}`
+          ? ` • ${escapeHtml(dict.bidLabel)}: ${p.bidTarget !== null ? p.bidTarget : '?'}`
           : '';
       return `
         <div class="pause-score-row">
-          <span class="pause-score-name">${p.name}</span>
+          <span class="pause-score-name">${escapeHtml(p.name)}</span>
           <span class="pause-score-meta">🏆 ${p.wins}${bidInfo}</span>
           <strong class="pause-score-pts">${pts} pts</strong>
         </div>
