@@ -60,25 +60,25 @@ export function getSeatLayout(playerCount) {
   if (isMobilePortrait) {
     if (playerCount === 3) {
       return [
-        { seatClass: 'pos-bottom', stagePos: { x: 50, y: 64, rot: 0 } },
-        { seatClass: 'pos-top-left', stagePos: { x: 24, y: 27, rot: -4 } },
-        { seatClass: 'pos-top-right', stagePos: { x: 76, y: 27, rot: 4 } }
+        { seatClass: 'pos-bottom', stagePos: { x: 50, y: 78, rot: 0 } },
+        { seatClass: 'pos-top-left', stagePos: { x: 24, y: 34, rot: -3 } },
+        { seatClass: 'pos-top-right', stagePos: { x: 76, y: 34, rot: 3 } }
       ];
     }
     if (playerCount === 4) {
       return [
-        { seatClass: 'pos-bottom', stagePos: { x: 50, y: 64, rot: 0 } },
-        { seatClass: 'pos-left', stagePos: { x: 16, y: 46, rot: -5 } },
-        { seatClass: 'pos-top-center', stagePos: { x: 50, y: 28, rot: 1 } },
-        { seatClass: 'pos-right', stagePos: { x: 84, y: 46, rot: 5 } }
+        { seatClass: 'pos-bottom', stagePos: { x: 50, y: 78, rot: 0 } },
+        { seatClass: 'pos-left', stagePos: { x: 16, y: 53, rot: 0 } },
+        { seatClass: 'pos-top-center', stagePos: { x: 50, y: 28, rot: 0 } },
+        { seatClass: 'pos-right', stagePos: { x: 84, y: 53, rot: 0 } }
       ];
     }
     return [
-      { seatClass: 'pos-bottom', stagePos: { x: 50, y: 65, rot: 0 } },
-      { seatClass: 'pos-mid-left', stagePos: { x: 15, y: 49, rot: -5 } },
-      { seatClass: 'pos-top-left', stagePos: { x: 32, y: 28, rot: -3 } },
-      { seatClass: 'pos-top-right', stagePos: { x: 68, y: 28, rot: 3 } },
-      { seatClass: 'pos-mid-right', stagePos: { x: 85, y: 49, rot: 5 } }
+      { seatClass: 'pos-bottom', stagePos: { x: 50, y: 78, rot: 0 } },
+      { seatClass: 'pos-mid-left', stagePos: { x: 14, y: 58, rot: -4 } },
+      { seatClass: 'pos-top-left', stagePos: { x: 35, y: 29, rot: -2 } },
+      { seatClass: 'pos-top-right', stagePos: { x: 65, y: 29, rot: 2 } },
+      { seatClass: 'pos-mid-right', stagePos: { x: 86, y: 58, rot: 4 } }
     ];
   }
 
